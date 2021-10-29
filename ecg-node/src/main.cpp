@@ -4,16 +4,19 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
-typedef int lead_t;
-typedef int ecg_t;
+#define DEBUG 0
 
-const char *peripheralName= "Heart Rate Monitor";
-const char *uuidService = "00001800-fc88-4a2f-a932-b65010875819";
+typedef int lead_t;
+typedef unsigned int ecg_time_t;
+typedef int ecg_value_t;
+
+const char *peripheralName = "Heart Rate Monitor";
+const char *uuidService = "00001006-fc88-4a2f-a932-b65010875819";
 // Leads connected/disconnected
-const char *uuidLeadsCharacteristic = "00002A3D-fc88-4a2f-a932-b65010875819"; // 123
+const char *uuidLeadsCharacteristic = "00001006-fc88-4a2f-a932-b65010875820"; // 123
 // ECG
-const char *uuidEcgTimeCharacteristic = ""; // 456
-const char *uuidEcgValueCharacteristic = ""; // 789
+const char *uuidEcgTimeCharacteristic = "00001006-fc88-4a2f-a932-b65010875821";  // 456
+const char *uuidEcgValueCharacteristic = "00001006-fc88-4a2f-a932-b65010875822"; // 789
 
 BLEServer *pServer;
 BLEService *pService;
@@ -26,12 +29,12 @@ lead_t getLeadsData()
     return 1;
 }
 
-time_t getEcgTimeData()
+ecg_time_t getEcgTimeData()
 {
-    return 2;
+    return millis();
 }
 
-ecg_t getEcgValueData()
+ecg_value_t getEcgValueData()
 {
     return 3;
 }
@@ -50,16 +53,19 @@ void setup()
     Serial.println("Setting up Leads");
     pLeadsCharacteristic = pService->createCharacteristic(
         uuidLeadsCharacteristic,
-        BLECharacteristic::PROPERTY_WRITE);
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    pLeadsCharacteristic->setValue("123");
 
     // Setup Ecg
     Serial.println("Setting up ECG");
     pEcgTimeCharacteristic = pService->createCharacteristic(
         uuidEcgTimeCharacteristic,
-        BLECharacteristic::PROPERTY_WRITE);
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    pEcgTimeCharacteristic->setValue("456");
     pEcgValueCharacteristic = pService->createCharacteristic(
         uuidEcgValueCharacteristic,
-        BLECharacteristic::PROPERTY_WRITE);
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    pEcgValueCharacteristic->setValue("789");
 
     pService->start();
 
@@ -73,21 +79,28 @@ void setup()
 
 void loop()
 {
-    Serial.println("####################");
     while (true)
     {
-        lead_t leadsData = getLeadsData();
-        time_t ecgTimeData = getEcgTimeData();
-        ecg_t ecgValueData = getEcgValueData();
+        auto leadsData = getLeadsData();
+        auto ecgTimeData = getEcgTimeData();
+        auto ecgValueData = getEcgValueData();
 
-        Serial.print("Leads:\t");
-        Serial.println(leadsData);
+        pLeadsCharacteristic->setValue(leadsData);
+        pEcgTimeCharacteristic->setValue(ecgTimeData);
+        pEcgValueCharacteristic->setValue(ecgValueData);
+
+        #if DEBUG == 1
+        Serial.print("#################### ");
+        Serial.println(millis());
+        Serial.print("Leads:\t\t");
+        Serial.println(*pLeadsCharacteristic->getData());
         Serial.print("EcgTime:\t");
-        Serial.println(ecgTimeData);
+        Serial.println(*pEcgTimeCharacteristic->getData());
         Serial.print("EcgValue:\t");
-        Serial.println(ecgValueData);
-        Serial.println("####################");
+        Serial.println(*pEcgValueCharacteristic->getData());
+        Serial.println();
 
-        delay(1000);
+        delay(3000);
+        #endif
     }
 }
