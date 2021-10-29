@@ -1,31 +1,20 @@
 
 import asyncio
-from bleak import BleakClient, BleakScanner
-from bleak.exc import BleakError
 import time
 
-address = "84:CC:A8:60:E5:7E"
-target_uuid = "00002a3d-fc88-4a2f-a932-b65010875819"
+from bleak import BleakClient, BleakScanner
+from bleak.exc import BleakError
+from struct import unpack
 
-uuidLeadsCharacteristic = ""
-uuidEcgTimeCharacteristic = ""
-uuidEcgValueCharacteristic = ""
+address = "84:CC:A8:60:E5:7E"
+
+uuidService = "00001006-fc88-4a2f-a932-b65010875819"
+uuidLeadsCharacteristic = "00001006-fc88-4a2f-a932-b65010875820"
+uuidEcgTimeCharacteristic = "00001006-fc88-4a2f-a932-b65010875821"
+uuidEcgValueCharacteristic = "00001006-fc88-4a2f-a932-b65010875822"
 
 last_read = 0
 
-async def scan():
-    devices = await BleakScanner.discover()
-    for d in devices:
-        print(d)
-
-async def findCharacteristics(client: BleakClient):
-    global uuidLeadsCharacteristic, uuidEcgTimeCharacteristic, uuidEcgValueCharacteristic
-
-    services = client.get_services()
-    for s in services:
-        print(f"Service {s} characteristics:")
-        for c in s.characteristics:
-            print("\t" + c)
 
 async def main():
     global last_read
@@ -37,7 +26,7 @@ async def main():
     try:
         async with BleakClient(device) as client:
             if not uuidLeadsCharacteristic or not uuidEcgTimeCharacteristic or not uuidEcgValueCharacteristic:
-                asyncio.run(findCharacteristics(client))
+                raise ValueError("One of UUIDs is not present!")
             else:
                 running = True
                 while running:
@@ -47,18 +36,22 @@ async def main():
                             try:
                                 await client.connect()
                             except Exception as e:
-                                print(f"Got exception while trying to connect: {e}")
-                        
+                                print(
+                                    f"Got exception while trying to connect: {e}")
+
                             print("Connected")
                             services = await client.get_services()
                             for s in services:
                                 print(f"{s} - characteristics:")
                                 for c in s.characteristics:
-                                    print(f"\tc")
-                        
-                        leadsCharacteristic = client.services.get_characteristic(uuidLeadsCharacteristic)
-                        ecgTimeCharacteristic = client.services.get_characteristic(uuidEcgTimeCharacteristic)
-                        ecgValueCharacteristic = client.services.get_characteristic(uuidEcgValueCharacteristic)
+                                    print(f"\t{c}")
+
+                        leadsCharacteristic = client.services.get_characteristic(
+                            uuidLeadsCharacteristic)
+                        ecgTimeCharacteristic = client.services.get_characteristic(
+                            uuidEcgTimeCharacteristic)
+                        ecgValueCharacteristic = client.services.get_characteristic(
+                            uuidEcgValueCharacteristic)
                         last_read = 0
                         while True:
                             try:
@@ -66,20 +59,19 @@ async def main():
                                 ecgTimeData = await client.read_gatt_char(ecgTimeCharacteristic)
                                 ecgValueData = await client.read_gatt_char(ecgValueCharacteristic)
                                 elapsed_time = time.time() - last_read
-                                print(f"T-{elapsed_time * 1000}ms:")
-                                print(f"Leads data: {leadsData}")
-                                print(f"ECG Time data: {ecgTimeData}")
-                                print(f"ECG Value data: {ecgValueData}")
+                                message = f"T-{elapsed_time * 1000}ms\nLeads data: {leadsData}\nECG Time data: {unpack('<L', ecgTimeData)}\nECG Value data: {ecgValueData}"
+                                print(message)
                                 last_read = time.time()
                             except Exception as e:
                                 print(f"Got exception while reading data: {e}")
                                 print("Breaking!")
+                                running = False
                                 break
                     except Exception as e:
                         print(f"Got exception in main loop: {e}")
                     finally:
-                        client.disconnect()
-                        client.unpair()
+                        await client.disconnect()
+                        await client.unpair()
     except Exception as e:
         print(f"Got exception in client context: {e}")
 
