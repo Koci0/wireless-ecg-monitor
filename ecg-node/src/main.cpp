@@ -6,37 +6,57 @@
 
 #define DEBUG 0
 
-typedef int lead_t;
-typedef unsigned int ecg_time_t;
-typedef int ecg_value_t;
-
 const char *peripheralName = "Heart Rate Monitor";
 const char *uuidService = "00001006-fc88-4a2f-a932-b65010875819";
-// Leads connected/disconnected
-const char *uuidLeadsCharacteristic = "00001006-fc88-4a2f-a932-b65010875820"; // 123
-// ECG
-const char *uuidEcgTimeCharacteristic = "00001006-fc88-4a2f-a932-b65010875821";  // 456
-const char *uuidEcgValueCharacteristic = "00001006-fc88-4a2f-a932-b65010875822"; // 789
+const char *uuidCharacteristic = "00001006-fc88-4a2f-a932-b65010875820";
 
 BLEServer *pServer;
 BLEService *pService;
-BLECharacteristic *pLeadsCharacteristic;
-BLECharacteristic *pEcgTimeCharacteristic;
-BLECharacteristic *pEcgValueCharacteristic;
+BLECharacteristic *pCharacteristic;
 
-lead_t getLeadsData()
+const unsigned int LO_POS = 11;
+const unsigned int LO_NEG = 15;
+const unsigned int ADC = 33;
+
+const unsigned short packetSize = 8;
+uint8_t packet[packetSize];
+
+uint16_t getLeadsData()
 {
-    return 1;
+    return digitalRead(LO_POS) & digitalRead(LO_NEG);
 }
 
-ecg_time_t getEcgTimeData()
+unsigned long getEcgTimeData()
 {
     return millis();
 }
 
-ecg_value_t getEcgValueData()
+uint16_t getEcgValueData()
 {
-    return 3;
+    return analogRead(ADC);
+}
+
+void updatePacketValue()
+{
+    auto time = getEcgTimeData();
+    packet[0] = time >> 24;
+    packet[1] = time >> 16;
+    packet[2] = time >> 8;
+    packet[3] = time >> 0;
+
+    auto leads = getLeadsData();
+    packet[4] = leads >> 8;
+    packet[5] = leads >> 0;
+
+    auto ecg = getEcgValueData();
+    packet[6] = ecg >> 8;
+    packet[7] = ecg >> 0;
+
+    #if DEBUG == 1
+    Serial.printf("Time: %d\n", time);
+    Serial.printf("Leads: %d\n", leads);
+    Serial.printf("ECG: %d\n", ecg);
+    #endif
 }
 
 void setup()
@@ -44,29 +64,21 @@ void setup()
     Serial.begin(115200);
     while (not Serial)
         ;
-    Serial.println("Staring BLE...");
+
+    Serial.println("Preparing ADS...");
+    pinMode(LO_POS, INPUT);
+    pinMode(LO_NEG, INPUT);
+
+    Serial.println("Starting BLE...");
     BLEDevice::init(peripheralName);
     pServer = BLEDevice::createServer();
     pService = pServer->createService(uuidService);
 
-    // Setup Leads
-    Serial.println("Setting up Leads");
-    pLeadsCharacteristic = pService->createCharacteristic(
-        uuidLeadsCharacteristic,
+    Serial.println("Setting up BLE service");
+    pCharacteristic = pService->createCharacteristic(
+        uuidCharacteristic,
         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    pLeadsCharacteristic->setValue("123");
-
-    // Setup Ecg
-    Serial.println("Setting up ECG");
-    pEcgTimeCharacteristic = pService->createCharacteristic(
-        uuidEcgTimeCharacteristic,
-        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    pEcgTimeCharacteristic->setValue("456");
-    pEcgValueCharacteristic = pService->createCharacteristic(
-        uuidEcgValueCharacteristic,
-        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    pEcgValueCharacteristic->setValue("789");
-
+    pCharacteristic->setValue("123");
     pService->start();
 
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
@@ -81,23 +93,17 @@ void loop()
 {
     while (true)
     {
-        auto leadsData = getLeadsData();
-        auto ecgTimeData = getEcgTimeData();
-        auto ecgValueData = getEcgValueData();
-
-        pLeadsCharacteristic->setValue(leadsData);
-        pEcgTimeCharacteristic->setValue(ecgTimeData);
-        pEcgValueCharacteristic->setValue(ecgValueData);
+        updatePacketValue();
+        pCharacteristic->setValue(packet, packetSize);
 
         #if DEBUG == 1
         Serial.print("#################### ");
         Serial.println(millis());
-        Serial.print("Leads:\t\t");
-        Serial.println(*pLeadsCharacteristic->getData());
-        Serial.print("EcgTime:\t");
-        Serial.println(*pEcgTimeCharacteristic->getData());
-        Serial.print("EcgValue:\t");
-        Serial.println(*pEcgValueCharacteristic->getData());
+        for (size_t i = 0; i < packetSize; i++)
+        {
+            Serial.print(packet[i]);
+            Serial.print(" ");
+        }
         Serial.println();
 
         delay(3000);
