@@ -1,18 +1,12 @@
 
 #include <Arduino.h>
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
+
+#include "BluetoothSerial.h"
 
 #define DEBUG 0
 
-const char *peripheralName = "Heart Rate Monitor";
-const char *uuidService = "00001006-fc88-4a2f-a932-b65010875819";
-const char *uuidCharacteristic = "00001006-fc88-4a2f-a932-b65010875820";
+BluetoothSerial btSerial;
 
-BLEServer *pServer;
-BLEService *pService;
-BLECharacteristic *pCharacteristic;
 
 const unsigned int LO_POS = 11;
 const unsigned int LO_NEG = 15;
@@ -69,44 +63,14 @@ void setup()
     pinMode(LO_POS, INPUT);
     pinMode(LO_NEG, INPUT);
 
-    Serial.println("Starting BLE...");
-    BLEDevice::init(peripheralName);
-    pServer = BLEDevice::createServer();
-    pService = pServer->createService(uuidService);
-
-    Serial.println("Setting up BLE service");
-    pCharacteristic = pService->createCharacteristic(
-        uuidCharacteristic,
-        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    pCharacteristic->setValue("123");
-    pService->start();
-
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(uuidService);
-    pAdvertising->setScanResponse(true);
-    BLEDevice::startAdvertising();
-
-    Serial.println("BLE server active, waiting for connections...");
+    Serial.println("Preparing Bluetooth Serial...");
+    btSerial.begin("ESP32_ECG_Monitor");
+    
+    Serial.println("Setup finished.");
 }
 
 void loop()
 {
-    while (true)
-    {
-        updatePacketValue();
-        pCharacteristic->setValue(packet, packetSize);
-
-        #if DEBUG == 1
-        Serial.print("#################### ");
-        Serial.println(millis());
-        for (size_t i = 0; i < packetSize; i++)
-        {
-            Serial.print(packet[i]);
-            Serial.print(" ");
-        }
-        Serial.println();
-
-        delay(3000);
-        #endif
-    }
+    updatePacketValue();
+    btSerial.write(packet, packetSize);
 }
