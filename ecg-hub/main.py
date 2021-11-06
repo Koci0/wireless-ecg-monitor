@@ -1,7 +1,7 @@
 
-import time
-
-from threading import Thread
+from time import sleep
+from threading import Event, Thread
+from queue import Empty, Full, Queue
 
 from bluetooth.bluez import BluetoothSocket, find_service
 from bluetooth.btcommon import RFCOMM
@@ -9,22 +9,30 @@ from bluetooth.btcommon import RFCOMM
 address = "84:CC:A8:60:E5:7E"
 packetSizeBytes = 8
 
+dataQueue = Queue()
+stopEvent = Event()
 
-def readFromPeripheral(socket: BluetoothSocket):
-    last_read = time.time()
 
-    try:
-        while True:
-            packet_data = socket.recv(8)
-            if not packet_data:
-                break
-            unpacked_data = unpacked_data = (int.from_bytes(packet_data[0:4], "big"), int.from_bytes(
-                packet_data[4:6], "big"), int.from_bytes(packet_data[6:8], "big"))
-            elapsed_time = time.time() - last_read
-            print(f"t-{elapsed_time * 1000}ms: {unpacked_data}")
-            last_read = time.time()
-    except KeyboardInterrupt:
-        return
+def receiveFromPeripheral(socket: BluetoothSocket):
+    while not stopEvent.is_set():
+        packet_data = socket.recv(8)
+        if not packet_data:
+            break
+        try:
+            dataQueue.put(packet_data, timeout=0.005)
+        except Full:
+            print("Queue timeout!")
+
+
+def readFromQueue():
+    while not stopEvent.is_set():
+        try:
+            raw_data = dataQueue.get_nowait()
+            unpacked_data = (int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
+                raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big"))
+            print(unpacked_data)
+        except Empty:
+            pass
 
 
 if __name__ == "__main__":
@@ -35,16 +43,22 @@ if __name__ == "__main__":
     host = service["host"]
 
     print(f"Connecting to {name} on {host}...")
-
-    bluetoothSocket = BluetoothSocket(RFCOMM)
-    bluetoothSocket.connect((host, port))
-
+    btSocket = BluetoothSocket(RFCOMM)
+    btSocket.connect((host, port))
     print(f"Connected.")
 
-    btThread = Thread(target=readFromPeripheral, args=(bluetoothSocket,))
+    btThread = Thread(target=receiveFromPeripheral, args=(btSocket,))
+    queueThread = Thread(target=readFromQueue, args=())
+
+    btThread.start()
+    queueThread.start()
 
     try:
-        btThread.start()
-        btThread.join()
+        while btThread.is_alive() or queueThread.is_alive():
+            sleep(3)
+    except KeyboardInterrupt:
+        stopEvent.set()
     finally:
-        bluetoothSocket.close()
+        btThread.join()
+        queueThread.join()
+        btSocket.close()
