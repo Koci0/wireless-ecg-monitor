@@ -1,15 +1,34 @@
 
 import time
 
-import bluetooth
+from threading import Thread
+
+from bluetooth.bluez import BluetoothSocket, find_service
+from bluetooth.btcommon import RFCOMM
 
 address = "84:CC:A8:60:E5:7E"
+packetSizeBytes = 8
 
-last_read = 0
+
+def readFromPeripheral(socket: BluetoothSocket):
+    last_read = time.time()
+
+    try:
+        while True:
+            packet_data = socket.recv(8)
+            if not packet_data:
+                break
+            unpacked_data = unpacked_data = (int.from_bytes(packet_data[0:4], "big"), int.from_bytes(
+                packet_data[4:6], "big"), int.from_bytes(packet_data[6:8], "big"))
+            elapsed_time = time.time() - last_read
+            print(f"t-{elapsed_time * 1000}ms: {unpacked_data}")
+            last_read = time.time()
+    except KeyboardInterrupt:
+        return
 
 
 if __name__ == "__main__":
-    service = bluetooth.find_service(address=address)[0]
+    service = find_service(address=address)[0]
 
     port = service["port"]
     name = service["name"]
@@ -17,23 +36,15 @@ if __name__ == "__main__":
 
     print(f"Connecting to {name} on {host}...")
 
-    sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-    sock.connect((host, port))
+    bluetoothSocket = BluetoothSocket(RFCOMM)
+    bluetoothSocket.connect((host, port))
 
     print(f"Connected.")
+
+    btThread = Thread(target=readFromPeripheral, args=(bluetoothSocket,))
+
     try:
-        while True:
-            packet_data = sock.recv(1024)
-            if not packet_data:
-                break
-            elapsed_time = time.time() - last_read
-            unpacked_data = unpacked_data = (int.from_bytes(packet_data[0:4], "big"), int.from_bytes(
-                packet_data[4:6], "big"), int.from_bytes(packet_data[6:8], "big"))
-            print(f"t-{elapsed_time * 1000}ms: {unpacked_data}")
-            last_read = time.time()
-    except OSError as error:
-        print(f"OSError: {error}")
-    except KeyboardInterrupt:
-        pass
+        btThread.start()
+        btThread.join()
     finally:
-        sock.close()
+        bluetoothSocket.close()
