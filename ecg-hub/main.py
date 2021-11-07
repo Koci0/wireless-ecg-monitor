@@ -1,4 +1,8 @@
 
+from collections import deque
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 from time import sleep
 from threading import Event, Thread
 from queue import Empty, Full, Queue
@@ -11,6 +15,18 @@ packetSizeBytes = 8
 
 dataQueue = Queue()
 stopEvent = Event()
+
+maxPointsOnPlot = 100
+times = deque(maxlen=maxPointsOnPlot)
+values = deque(maxlen=maxPointsOnPlot)
+
+fig = plt.figure()
+ax1 = fig.add_subplot(1, 1, 1)
+
+
+def animate(i):
+    ax1.clear()
+    ax1.plot(times, values)
 
 
 def receiveFromPeripheral(socket: BluetoothSocket):
@@ -28,9 +44,12 @@ def readFromQueue():
     while not stopEvent.is_set():
         try:
             raw_data = dataQueue.get_nowait()
-            unpacked_data = (int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
-                raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big"))
-            print(unpacked_data)
+            time, isLeadDisconnected, value = int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
+                raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big")
+
+            if not isLeadDisconnected:
+                times.append(time)
+                values.append(value)
         except Empty:
             pass
 
@@ -47,6 +66,8 @@ if __name__ == "__main__":
     btSocket.connect((host, port))
     print(f"Connected.")
 
+    ani = animation.FuncAnimation(fig, animate, interval=1000)
+
     btThread = Thread(target=receiveFromPeripheral, args=(btSocket,))
     queueThread = Thread(target=readFromQueue, args=())
 
@@ -55,7 +76,7 @@ if __name__ == "__main__":
 
     try:
         while btThread.is_alive() or queueThread.is_alive():
-            sleep(3)
+            plt.show()
     except KeyboardInterrupt:
         stopEvent.set()
     finally:
