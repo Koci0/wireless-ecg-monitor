@@ -20,7 +20,7 @@ class Plotter:
         self.ax1 = self.fig.add_subplot(1, 1, 1)
 
         self.ani = animation.FuncAnimation(
-            self.fig, self.animate, interval=1000)
+            self.fig, self.animate, interval=5000)
 
     def animate(self, i):
         self.ax1.clear()

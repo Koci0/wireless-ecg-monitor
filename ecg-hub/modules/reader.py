@@ -1,11 +1,16 @@
 
+import sys
 
 from collections import deque
-import logging
+from datetime import date
 from queue import Queue, Empty
 from threading import Event, Thread
+
+import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+filename = f"data_{date.today()}.dat"
 
 
 class Reader:
@@ -18,6 +23,11 @@ class Reader:
 
         self.thread = Thread(target=self.readFromQueue)
 
+        self.file = open(filename, "w")
+        if not self.file:
+            logger.error("Failed to open file, abort!")
+            sys.exit(1)
+
     def start(self):
         logger.info("Thread starting.")
         self.thread.start()
@@ -25,6 +35,7 @@ class Reader:
     def stop(self):
         logger.info("Thread stopping.")
         self.thread.join()
+        self.file.close()
 
     def readFromQueue(self):
         while not self.stopEvent.is_set():
@@ -35,5 +46,7 @@ class Reader:
                 if not isLeadDisconnected:
                     self.times.append(time)
                     self.values.append(value)
+
+                    self.file.write(f"{time} {value}\n")
             except Empty:
                 pass
