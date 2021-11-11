@@ -2,7 +2,7 @@
 import sys
 
 from collections import deque
-from datetime import date
+from datetime import datetime
 from queue import Queue, Empty
 from threading import Event, Thread
 
@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-filename = f"data_{date.today()}.dat"
+filename = f"data_{datetime.now()}.dat"
 
 
 class Reader:
@@ -20,6 +20,7 @@ class Reader:
         self.dataQueue = dataQueue
         self.times = times
         self.values = values
+        self.startTime = 0
 
         self.thread = Thread(target=self.readFromQueue)
 
@@ -38,11 +39,20 @@ class Reader:
         self.file.close()
 
     def readFromQueue(self):
+        while not self.startTime:
+            try:
+                raw_data = self.dataQueue.get_nowait()
+            except Empty:
+                continue
+            self.startTime = int.from_bytes(raw_data[0:4], "big")
+        logger.info(f"Start time is {self.startTime}")
+
         while not self.stopEvent.is_set():
             try:
                 raw_data = self.dataQueue.get_nowait()
                 time, isLeadDisconnected, value = int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
                     raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big")
+                time = (time - self.startTime) / 1000
                 if not isLeadDisconnected:
                     self.times.append(time)
                     self.values.append(value)
