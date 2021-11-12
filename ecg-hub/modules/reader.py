@@ -1,4 +1,6 @@
 
+from modules.processor import Processor
+
 import sys
 
 from collections import deque
@@ -21,6 +23,7 @@ class Reader:
         self.times = times
         self.values = values
         self.startTime = 0
+        self.processor = Processor(times, values)
 
         self.thread = Thread(target=self.readFromQueue)
 
@@ -52,11 +55,13 @@ class Reader:
                 raw_data = self.dataQueue.get_nowait()
                 time, isLeadDisconnected, value = int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
                     raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big")
-                time = (time - self.startTime) / 1000
                 if not isLeadDisconnected:
-                    self.times.append(time)
-                    self.values.append(value)
+                    value = self.processor.getProcessedValue(value)
+                    if value:
+                        time = (time - self.startTime) / 1000
+                        self.times.append(time)
+                        self.values.append(value)
 
-                    self.file.write(f"{time} {value}\n")
+                        self.file.write(f"{time} {value}\n")
             except Empty:
                 pass
