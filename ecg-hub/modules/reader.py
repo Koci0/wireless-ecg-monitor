@@ -17,20 +17,22 @@ filename = f"data_{datetime.now()}.dat"
 
 class Reader:
 
-    def __init__(self, stopEvent: Event, dataQueue: Queue, times: deque, values: deque):
+    def __init__(self, stopEvent: Event, dataQueue: Queue, times: deque, values: deque, saveToFile: bool = True):
         self.stopEvent = stopEvent
         self.dataQueue = dataQueue
         self.times = times
         self.values = values
         self.startTime = 0
         self.processor = Processor(times, values)
+        self.saveToFile = saveToFile
 
         self.thread = Thread(target=self.readFromQueue)
 
-        self.file = open(filename, "w")
-        if not self.file:
-            logger.error("Failed to open file, abort!")
-            sys.exit(1)
+        if self.saveToFile:
+            self.file = open(filename, "w")
+            if not self.file:
+                logger.error("Failed to open file, abort!")
+                sys.exit(1)
 
     def start(self):
         logger.info("Thread starting.")
@@ -62,6 +64,7 @@ class Reader:
                         self.times.append(time)
                         self.values.append(value)
 
-                        self.file.write(f"{time} {value}\n")
+                        if self.saveToFile:
+                            self.file.write(f"{time} {value}\n")
             except Empty:
                 pass

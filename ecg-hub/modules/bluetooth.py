@@ -61,16 +61,18 @@ class Bluetooth:
         while not self.stopEvent.is_set():
             try:
                 packet_data = self.socket.recv(8)
+            except BluetoothError as error:
+                print(f"Failed to receive data: {error}")
                 for _ in range(self.maxRetries):
                     if self.connect():
                         break
                 else:
                     print("Failed to reconnect. Exit!")
                     sys.exit(1)
-            except BluetoothError as error:
-                print(error)
+            
             if not packet_data:
                 break
+
             try:
                 self.dataQueue.put(packet_data, timeout=0.005)
             except Full:
