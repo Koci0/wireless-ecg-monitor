@@ -1,4 +1,5 @@
 
+import modules.const as const
 from modules.bluetooth import Bluetooth
 from modules.plotter import Plotter
 from modules.reader import Reader
@@ -13,8 +14,6 @@ from queue import Queue
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-MAX_POINTS_ON_PLOT = 300
 
 
 def process(filename: str):
@@ -51,15 +50,14 @@ def plot(filename: str):
 
 
 def main(saveToFile: bool = True):
-    times = deque(maxlen=MAX_POINTS_ON_PLOT)
-    values = deque(maxlen=MAX_POINTS_ON_PLOT)
+    times = deque(maxlen=const.MAX_POINTS_ON_PLOT)
+    values = deque(maxlen=const.MAX_POINTS_ON_PLOT)
     dataQueue = Queue()
     stopEvent = Event()
 
     bluetooth = Bluetooth(dataQueue, stopEvent)
     reader = Reader(stopEvent, dataQueue, times, values, saveToFile)
     plotter = Plotter(times, values)
-    plotter.show()
 
     bluetooth.connect()
     bluetooth.start()
@@ -67,6 +65,7 @@ def main(saveToFile: bool = True):
 
     try:
         logger.info("Entering main loop.")
+        plotter.show()
         while bluetooth.thread.is_alive() or reader.thread.is_alive():
             pass
     except KeyboardInterrupt:

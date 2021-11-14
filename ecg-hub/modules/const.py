@@ -1,0 +1,2 @@
+
+MAX_POINTS_ON_PLOT = 100
