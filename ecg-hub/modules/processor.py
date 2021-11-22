@@ -12,16 +12,28 @@ class Processor:
         self.times = times
         self.values = values
 
-    def getProcessedValue(self, value: int):
-        if value >= self.maxValue or value <= self.minValue:
+    def getProcessedValue(self, value: int) -> Union[None, float]:
+        value = self._getInRangeValue(value)
+        if not value:
             return None
+        value = self._getNormalizedValue(value)
         return value
 
     def processValues(self):
         index = 0
         while index < len(self.values):
-            if not self.getProcessedValue(self.values[index]):
-                self.values.pop(index)
-                self.times.pop(index)
-            else:
+            value = self.getProcessedValue(self.values[index])
+            if value:
+                self.values[index] = value
                 index += 1
+            else:
+                self.times.remove(self.times[index])
+                self.values.remove(self.values[index])
+
+    def _getInRangeValue(self, value: int) -> Union[None, int]:
+        if self.minValue <= value <= self.maxValue:
+            return value
+        return None
+
+    def _getNormalizedValue(self, value: int) -> Union[None, float]:
+        return (value * 3.3) / 4096

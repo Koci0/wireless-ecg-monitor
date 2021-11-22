@@ -42,7 +42,7 @@ def plot(filename: str):
         lines = file.readlines()
         for line in lines:
             time, value = line.strip('\n').split(" ")
-            values.append(int(value))
+            values.append(float(value))
             times.append(int(time))
 
     plotter = Plotter(times, values)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         index = sys.argv.index("--process") + 1
         print(f"Processing file {sys.argv[index]}")
         process(sys.argv[index])
-    if "--plot" in sys.argv:
+    elif "--plot" in sys.argv:
         index = sys.argv.index("--plot") + 1
         print(f"Plotting file {sys.argv[index]}")
         plot(sys.argv[index])
