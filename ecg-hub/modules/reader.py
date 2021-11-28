@@ -1,4 +1,6 @@
 
+import modules.const as const
+
 from modules.processor import Processor
 
 import sys
@@ -63,5 +65,16 @@ class Reader:
 
                         if self.saveToFile:
                             self.file.write(f"{time} {value}\n")
+
+                        self.removeOverflow()
             except Empty:
                 pass
+
+    def removeOverflow(self):
+        threshold = len(self.processedData) - const.MAX_POINTS_ON_PLOT
+        if not threshold:
+            return
+
+        keys = list(self.processedData.keys())
+        for index in range(threshold):
+            del self.processedData[keys[index]]

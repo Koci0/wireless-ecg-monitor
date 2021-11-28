@@ -5,8 +5,6 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from collections import deque
-
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
