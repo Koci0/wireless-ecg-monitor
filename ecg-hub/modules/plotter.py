@@ -17,9 +17,8 @@ class Plotter:
     width = 36
     height = 6
 
-    def __init__(self, times: deque, values: deque, maxPointOnPlot=const.MAX_POINTS_ON_PLOT, interval=10):
-        self.times = times
-        self.values = values
+    def __init__(self, processedData: dict, maxPointOnPlot=const.MAX_POINTS_ON_PLOT, interval=10):
+        self.processedData = processedData
         self.lastTime = 0
         self.lastPlot = time.time()
         self.maxPointsOnPlot = maxPointOnPlot
@@ -32,19 +31,22 @@ class Plotter:
             self.fig, self.animate, interval=interval)
 
     def animate(self, _):
-        minTimes = min(self.times)
-        maxTimes = max(self.times)
-        maxValues = max(self.values)
+        times = list(self.processedData.keys())
+        values = list(self.processedData.values())
+
+        minTimes = min(times)
+        maxTimes = max(times)
+        maxValues = max(values)
 
         self.ax.clear()
         self.ax.set_xlim([minTimes, maxTimes])
         self.ax.set_ylim([0, maxValues])
-        self.ax.plot(self.times, self.values)
+        self.ax.plot(times, values)
 
         plt.annotate(str(round(time.time() - self.lastPlot, 2)), xy=(minTimes, maxValues))
         plt.axvline(x=self.lastTime, color="red")
 
-        self.lastTime = self.times[-1]
+        self.lastTime = times[-1]
         self.lastPlot = time.time()
 
     def show(self):

@@ -3,7 +3,6 @@ from modules.processor import Processor
 
 import sys
 
-from collections import deque
 from datetime import datetime
 from queue import Queue, Empty
 from threading import Event, Thread
@@ -17,13 +16,12 @@ filename = f"data_{datetime.now()}.dat"
 
 class Reader:
 
-    def __init__(self, stopEvent: Event, dataQueue: Queue, times: deque, values: deque, saveToFile: bool = True):
+    def __init__(self, stopEvent: Event, dataQueue: Queue, processedData: dict, saveToFile: bool = True):
         self.stopEvent = stopEvent
         self.dataQueue = dataQueue
-        self.times = times
-        self.values = values
+        self.processedData = processedData
         self.startTime = 0
-        self.processor = Processor(times, values)
+        self.processor = Processor(processedData)
         self.saveToFile = saveToFile
 
         self.thread = Thread(target=self.readFromQueue)
@@ -61,8 +59,7 @@ class Reader:
                     value = self.processor.getProcessedValue(value)
                     if value:
                         time = (time - self.startTime) / 1000
-                        self.times.append(time)
-                        self.values.append(value)
+                        self.processedData[time] = value
 
                         if self.saveToFile:
                             self.file.write(f"{time} {value}\n")

@@ -7,7 +7,6 @@ from modules.processor import Processor
 
 import sys
 
-from collections import deque
 from threading import Event
 from queue import Queue
 
@@ -17,47 +16,42 @@ logger.setLevel(logging.DEBUG)
 
 
 def process(filename: str):
-    times = []
-    values = []
+    ecgData = dict()
     with open(filename, "r") as file:
         lines = file.readlines()
         for line in lines:
             time, value = line.strip('\n').split(" ")
-            values.append(int(value))
-            times.append(int(time))
+            ecgData[int(time)] = float(value)
 
-    processor = Processor(times, values)
+    processor = Processor(ecgData)
     processor.processValues()
 
     with open(f"processed_{filename}", "w") as file:
-        for index in range(min(len(times), len(values))):
-            print(f"{times[index]} {values[index]}")
-            file.write(f"{times[index]} {values[index]}\n")
+        for time, value in ecgData.items():
+            print(f"{time} {value}")
+            file.write(f"{time} {value}\n")
 
 
 def plot(filename: str):
-    times = []
-    values = []
+    ecgData = dict()
     with open(filename, "r") as file:
         lines = file.readlines()
         for line in lines:
             time, value = line.strip('\n').split(" ")
-            values.append(float(value))
-            times.append(int(time))
+            ecgData[int(time)] = float(value)
 
-    plotter = Plotter(times, values)
+    plotter = Plotter(ecgData)
     plotter.show()
 
 
 def main(saveToFile: bool = True):
-    times = deque(maxlen=const.MAX_POINTS_ON_PLOT)
-    values = deque(maxlen=const.MAX_POINTS_ON_PLOT)
+    processedData = dict()
     dataQueue = Queue()
     stopEvent = Event()
 
     bluetooth = Bluetooth(dataQueue, stopEvent)
-    reader = Reader(stopEvent, dataQueue, times, values, saveToFile)
-    plotter = Plotter(times, values)
+    reader = Reader(stopEvent, dataQueue, processedData, saveToFile)
+    plotter = Plotter(processedData)
 
     bluetooth.connect()
     bluetooth.start()

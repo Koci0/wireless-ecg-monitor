@@ -1,5 +1,4 @@
 
-from collections import deque
 from typing import Union, List
 
 
@@ -8,9 +7,8 @@ class Processor:
     minValue = 0
     maxValue = 2800
 
-    def __init__(self, times: Union[List, deque], values: Union[List, deque]):
-        self.times = times
-        self.values = values
+    def __init__(self, processedData: dict):
+        self.processedData = processedData
 
     def getProcessedValue(self, value: int) -> Union[None, float]:
         value = self._getInRangeValue(value)
@@ -20,15 +18,16 @@ class Processor:
         return value
 
     def processValues(self):
-        index = 0
-        while index < len(self.values):
-            value = self.getProcessedValue(self.values[index])
-            if value:
-                self.values[index] = value
-                index += 1
+        keysToDelete = list()
+        for time, value in self.processedData.items():
+            processedValue = self.getProcessedValue(value)
+            if processedValue:
+                self.processedData[time] = processedValue
             else:
-                self.times.remove(self.times[index])
-                self.values.remove(self.values[index])
+                keysToDelete.append(time)
+        
+        for key in keysToDelete:
+            del self.processedData[key]
 
     def _getInRangeValue(self, value: int) -> Union[None, int]:
         if self.minValue <= value <= self.maxValue:
