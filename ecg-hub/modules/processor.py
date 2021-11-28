@@ -1,4 +1,5 @@
 
+from collections import deque
 from typing import Union
 
 
@@ -7,13 +8,19 @@ class Processor:
     minValue = 0
     maxValue = 2800
 
+    alpha = 0.5
+    averageLength = 80
+    previousEma = 0
+
     def __init__(self, processedData: dict):
         self.processedData = processedData
+        self.emaAtTimePeriod = deque(maxlen=self.averageLength)
 
     def getProcessedValue(self, value: int) -> Union[None, float]:
         value = self._getInRangeValue(value)
         if not value:
             return None
+        value = self._getExponentialMovingAverageValue(value)
         value = self._getNormalizedValue(value)
         return value
 
@@ -25,7 +32,7 @@ class Processor:
                 self.processedData[time] = processedValue
             else:
                 keysToDelete.append(time)
-        
+
         for key in keysToDelete:
             del self.processedData[key]
 
@@ -34,5 +41,15 @@ class Processor:
             return value
         return None
 
-    def _getNormalizedValue(self, value: int) -> Union[None, float]:
+    def _getExponentialMovingAverageValue(self, value: int) -> float:
+        if not self.previousEma:
+            self.previousEma = value
+            return value
+        else:
+            currentEma = self.alpha * value + \
+                (1 - self.alpha) * self.previousEma
+            self.previousEma = currentEma
+            return currentEma
+
+    def _getNormalizedValue(self, value) -> Union[None, float]:
         return (value * 3.3) / 4096
