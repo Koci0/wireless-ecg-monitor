@@ -17,7 +17,7 @@ uint8_t packet[packetSize];
 
 uint16_t getLeadsData()
 {
-    return digitalRead(LO_POS) & digitalRead(LO_NEG);
+    return digitalRead(LO_POS) | digitalRead(LO_NEG);
 }
 
 unsigned long getEcgTimeData()

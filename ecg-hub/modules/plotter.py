@@ -15,7 +15,7 @@ class Plotter:
     width = 36
     height = 6
 
-    def __init__(self, processedData: dict, maxPointOnPlot=const.MAX_POINTS_ON_PLOT, interval=10):
+    def __init__(self, processedData: dict, maxPointOnPlot=const.MAX_POINTS_ON_PLOT, interval=2000):
         self.processedData = processedData
         self.lastTime = 0
         self.lastPlot = time.time()
@@ -41,7 +41,7 @@ class Plotter:
         self.ax.set_ylim([0, maxValues])
         self.ax.plot(times, values)
 
-        plt.annotate(str(round(time.time() - self.lastPlot, 2)), xy=(minTimes, maxValues))
+        plt.annotate(f"Delay: {str(round(time.time() - self.lastPlot, 2))}", xy=(minTimes, maxValues))
         plt.axvline(x=self.lastTime, color="red")
 
         self.lastTime = times[-1]

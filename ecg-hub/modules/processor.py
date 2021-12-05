@@ -6,7 +6,7 @@ from typing import Union
 class Processor:
 
     minValue = 0
-    maxValue = 2800
+    maxValue = 4000
 
     alpha = 0.5
     averageLength = 80
