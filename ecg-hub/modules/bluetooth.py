@@ -7,9 +7,8 @@ from threading import Event, Thread
 from bluetooth.bluez import BluetoothSocket, find_service
 from bluetooth.btcommon import RFCOMM, BluetoothError
 
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from modules.logger import Logger
+logger = Logger()
 
 
 class Bluetooth:
@@ -18,7 +17,7 @@ class Bluetooth:
     packetSizeBytes = 8
     maxRetries = 3
 
-    def __init__(self, dataQueue: Queue, stopEvent: Event, address=None, packetSizeBytes=None):
+    def __init__(self, stopEvent: Event, dataQueue: Queue, address=None, packetSizeBytes=None):
         if address:
             self.address = address
         if packetSizeBytes:
@@ -55,7 +54,7 @@ class Bluetooth:
 
     def stop(self):
         logger.info("Thread stopping.")
-        self.thread.join()
+        self.socket.close()
 
     def receiveFromPeripheral(self):
         while not self.stopEvent.is_set():
@@ -69,7 +68,7 @@ class Bluetooth:
                 else:
                     print("Failed to reconnect. Exit!")
                     sys.exit(1)
-            
+
             if not packet_data:
                 break
 
@@ -77,3 +76,5 @@ class Bluetooth:
                 self.dataQueue.put(packet_data, timeout=0.005)
             except Full:
                 logger.warning("Queue timeout!")
+        
+        self.stop()

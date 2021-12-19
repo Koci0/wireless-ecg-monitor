@@ -5,14 +5,34 @@ from modules.plotter import Plotter
 from modules.reader import Reader
 from modules.processor import Processor
 
+import signal
 import sys
 
 from threading import Event
 from queue import Queue
+from time import sleep
 
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from modules.logger import Logger
+logger = Logger()
+
+
+def _handler(signum, _):
+    stopEvent.set()
+    sleep(const.PLOT_INTERVAL)
+
+    if bluetooth.thread.is_alive():
+        bluetooth.thread.join()
+    if reader.thread.is_alive():
+        reader.thread.join()
+    if plotter.process.is_alive():
+        plotter.process.join()
+
+    sys.exit(1)
+
+
+signal.signal(signal.SIGINT, _handler)
+stopEvent = Event()
+bluetooth, reader, plotter = None, None, None
 
 
 def process(filename: str):
@@ -41,33 +61,32 @@ def plot(filename: str):
             ecgData[int(time)] = float(value)
 
     plotter = Plotter(ecgData)
-    plotter.show()
+    plotter.start()
+    try:
+        while True:
+            sleep(0.1)
+    except KeyboardInterrupt:
+        stopEvent.set()
 
 
 def main(saveToFile: bool = True):
+    global bluetooth, reader, plotter
+
     processedData = dict()
     dataQueue = Queue()
-    stopEvent = Event()
 
-    bluetooth = Bluetooth(dataQueue, stopEvent)
+    bluetooth = Bluetooth(stopEvent, dataQueue)
     reader = Reader(stopEvent, dataQueue, processedData, saveToFile)
-    plotter = Plotter(processedData)
+    plotter = Plotter(stopEvent, processedData)
 
     bluetooth.connect()
     bluetooth.start()
     reader.start()
+    plotter.start()
 
-    try:
-        logger.info("Entering main loop.")
-        plotter.show()
-        while bluetooth.thread.is_alive() or reader.thread.is_alive():
-            pass
-    except KeyboardInterrupt:
-        stopEvent.set()
-    finally:
-        bluetooth.thread.join()
-        bluetooth.socket.close()
-        reader.thread.join()
+    logger.info("Entering main loop.")
+    while bluetooth.thread.is_alive() or reader.thread.is_alive():
+        pass
 
 
 if __name__ == "__main__":

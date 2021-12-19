@@ -9,9 +9,8 @@ from datetime import datetime
 from queue import Queue, Empty
 from threading import Event, Thread
 
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from modules.logger import Logger
+logger = Logger()
 
 filename = f"data_{datetime.now()}.dat"
 
@@ -40,8 +39,8 @@ class Reader:
 
     def stop(self):
         logger.info("Thread stopping.")
-        self.thread.join()
-        self.file.close()
+        if self.saveToFile:
+            self.file.close()
 
     def readFromQueue(self):
         while not self.startTime:
@@ -57,7 +56,9 @@ class Reader:
                 raw_data = self.dataQueue.get_nowait()
                 time, isLeadDisconnected, value = int.from_bytes(raw_data[0:4], "big"), int.from_bytes(
                     raw_data[4:6], "big"), int.from_bytes(raw_data[6:8], "big")
-                if not isLeadDisconnected:
+                # TODO: remove debugging if
+                # if not isLeadDisconnected:
+                if True:
                     value = self.processor.getProcessedValue(value)
                     if value:
                         time = (time - self.startTime) / 1000
@@ -69,6 +70,8 @@ class Reader:
                         self.removeOverflow()
             except Empty:
                 pass
+        
+        self.stop()
 
     def removeOverflow(self):
         threshold = len(self.processedData) - const.MAX_POINTS_ON_PLOT
