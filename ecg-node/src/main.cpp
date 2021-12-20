@@ -6,7 +6,7 @@
 #define DEBUG 0
 
 BluetoothSerial btSerial;
-
+unsigned long previousTime;
 
 const unsigned int LO_POS = 11;
 const unsigned int LO_NEG = 15;
@@ -30,7 +30,7 @@ uint16_t getEcgValueData()
     return analogRead(ADC);
 }
 
-void updatePacketValue()
+unsigned long updatePacketValue()
 {
     auto time = getEcgTimeData();
     packet[0] = time >> 24;
@@ -47,10 +47,10 @@ void updatePacketValue()
     packet[7] = ecg >> 0;
 
     #if DEBUG == 1
-    Serial.printf("Time: %d\n", time);
-    Serial.printf("Leads: %d\n", leads);
-    Serial.printf("ECG: %d\n", ecg);
+    Serial.printf("[%d] %d: %d\n", leads, time, ecg);
     #endif
+
+    return time;
 }
 
 void setup()
@@ -67,10 +67,14 @@ void setup()
     btSerial.begin("ESP32_ECG_Monitor");
     
     Serial.println("Setup finished.");
+    previousTime = millis();
 }
 
 void loop()
 {
-    updatePacketValue();
-    btSerial.write(packet, packetSize);
+    if (millis() >= previousTime + 5)
+    {
+        previousTime = updatePacketValue();
+        btSerial.write(packet, packetSize);
+    }
 }
