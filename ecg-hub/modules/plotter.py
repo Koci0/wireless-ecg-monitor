@@ -1,5 +1,4 @@
 
-from bluetooth.bluez import stop_advertising
 import modules.const as const
 
 import time
@@ -44,7 +43,7 @@ class Plotter:
 
         minTimes = min(times)
         maxTimes = max(times)
-        maxValues = max(values)
+        maxValues = max(max(values), const.PLOT_MAX_VALUE)
 
         self.ax.clear()
         self.ax.set_xlim([minTimes, maxTimes])

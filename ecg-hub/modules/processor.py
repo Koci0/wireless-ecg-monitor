@@ -1,20 +1,17 @@
 
-from collections import deque
 from typing import Union
 
 
 class Processor:
 
-    minValue = 0
-    maxValue = 4000
+    minValue = 40
+    maxValue = 4055
 
-    alpha = 0.5
-    averageLength = 80
+    alpha = 0.3
     previousEma = 0
 
     def __init__(self, processedData: dict):
         self.processedData = processedData
-        self.emaAtTimePeriod = deque(maxlen=self.averageLength)
 
     def getProcessedValue(self, value: int) -> Union[None, float]:
         value = self._getInRangeValue(value)

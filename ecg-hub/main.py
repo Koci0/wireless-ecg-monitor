@@ -20,11 +20,11 @@ def _handler(signum, _):
     stopEvent.set()
     sleep(const.PLOT_INTERVAL)
 
-    if bluetooth.thread.is_alive():
+    if bluetooth and bluetooth.thread.is_alive():
         bluetooth.thread.join()
-    if reader.thread.is_alive():
+    if reader and reader.thread.is_alive():
         reader.thread.join()
-    if plotter.process.is_alive():
+    if plotter and plotter.process.is_alive():
         plotter.process.join()
 
     sys.exit(1)
@@ -41,7 +41,7 @@ def process(filename: str):
         lines = file.readlines()
         for line in lines:
             time, value = line.strip('\n').split(" ")
-            ecgData[int(time)] = float(value)
+            ecgData[time] = float(value)
 
     processor = Processor(ecgData)
     processor.processValues()
@@ -58,9 +58,9 @@ def plot(filename: str):
         lines = file.readlines()
         for line in lines:
             time, value = line.strip('\n').split(" ")
-            ecgData[int(time)] = float(value)
+            ecgData[time] = float(value)
 
-    plotter = Plotter(ecgData)
+    plotter = Plotter(stopEvent, ecgData)
     plotter.start()
     try:
         while True:
