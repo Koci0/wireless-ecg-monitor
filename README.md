@@ -1,32 +1,36 @@
 # Wireless ECG Monitor
 
-Project aims to create a wireless ECG monitor using off the shelf components. It's purpose is to limit the amount of cables/wires running from the patient to the device itself - and making it easier for nurses to take care of them. _Node_ is a ESP32 One with AD8232 module which sends data wirelessly via Bluetooth Serial to _Hub_ (Raspberry Pi or any computer with Bluetooth) which processes data and displays it on the screen.
+Project aims to create a wireless ECG monitor using off the shelf components. It's purpose is to limit the amount of cables/wires running from the patient to the device itself - and making it easier for nurses to take care of them. The device consists of a Raspberry Pi with ADS126x High Precision ADC Hat.
 
-Project initially created as the Bachelor's Thesis at Cracow University of Technology (marked with a tag).
+## Setting up development environment (WIP)
 
-## Building
-
-1. Collect hardware:
-- ESP32 One (libraries used are compatible with Arduino but it was not tested)
-- AD8232 (ex. from Adafruit)
+1. Collect the hardware:
 - Raspberry Pi 4 (or any other computer with Bluetooth and a screen)
+- ADS126x High Precision ADC HAT
 
-2. Connect hardware according to _NodeSchemePrint.png_ or according to the table below:
+2. Connect hardware.
+3. Setup SSH key authentication:
+- Generate key on development machine: `ssh-keygen -t ed25519 -f pi_ed25519 -N ""`
+- Copy public key to the Raspberry Pi: 
+```
+    ssh $(USER)@$(IP) "mkdir -p /home/$(USER)/.ssh"
+    scp pi_ed25519.pub $(USER)@$(IP):/home/$(USER)/.ssh/
+```
+- Enable key authentication by setting the following options in `/etc/ssh/sshd_config`:
+```
+PubkeyAuthentication Yes
+```
+- Restart ssh service: `service ssh reload`
+- Check the key by performing: `ssh -i pi_ed25519 $(USER)@$(IP)`
 
-| AD8232 | GPIO number |
-| --- | --- |
-| 3.3V | 17 |
-| GND | 39 |
-| OUTPUT | 38 |
-| LO- | 15 |
-| LO+ | 11 |
-
-3. Clone this repo.
-4. Using platformio flash contents of _ecg-node_ onto _Node_.
-5. Copy contents of _ecg-hub_ onto _Hub_.
-6. Modify _ecg-hub/modules/bluetooth.py_ and change `address` field of `Bluetooth` class with address of _Node_.
-7. Run _ecg-hub/setup.py_ (or create venv and install requirements).
-8. Run _ecg-hub/run.sh_. Devices should connect automatically and start displaying data immediately.
+4. Clone this repository.
+5. Run `make` or all the actions separately: (TBD)
+```
+make clean
+make upload
+make build
+make run
+```
 
 ## Authors
 
