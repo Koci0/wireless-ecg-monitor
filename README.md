@@ -10,21 +10,27 @@ Project aims to create a wireless ECG monitor using off the shelf components. It
 
 2. Connect hardware.
 3. Setup SSH key authentication:
-- Generate key on development machine: `ssh-keygen -t ed25519 -f pi_ed25519 -N ""`
+- Generate key on development machine: `ssh-keygen -t ed25519 -f key -N ""`
 - Copy public key to the Raspberry Pi: 
 ```
     ssh $(USER)@$(IP) "mkdir -p /home/$(USER)/.ssh"
-    scp pi_ed25519.pub $(USER)@$(IP):/home/$(USER)/.ssh/
+    scp key.pub $(USER)@$(IP):/home/$(USER)/.ssh/
 ```
 - Enable key authentication by setting the following options in `/etc/ssh/sshd_config`:
 ```
-PubkeyAuthentication Yes
+    PubkeyAuthentication Yes
 ```
 - Restart ssh service: `service ssh reload`
-- Check the key by performing: `ssh -i pi_ed25519 $(USER)@$(IP)`
+- Check the key by performing: `ssh -i key $(USER)@$(IP)`
 
 4. Clone this repository.
-5. Run `make` or all the actions separately: (TBD)
+5. Setup the required libraries:
+```
+scp -i key "wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.68.tar.gz"
+scp -i key "tar zxvf bcm2835-1.68.tar.gz"
+scp -i key "cd bcm2835-1.68/ && sudo su && sudo ./configure && sudo make && sudo make check && sudo make install"
+```
+6. Run `make` or all the actions separately: (TBD)
 ```
 make clean
 make upload
