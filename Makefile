@@ -1,6 +1,6 @@
 
 USER := pi
-IP := 192.168.55.106
+IP := 192.168.55.110
 
 HOME := /home/$(USER)
 TARGET_DIR := $(HOME)/wireless_ecg
@@ -15,6 +15,12 @@ TAR_NAME := wireless_ecg.tar
 TARGET := wireless_ecg
 
 all: clean upload build run
+
+init:
+	rm pi_ed25519*
+	ssh-keygen -t ed25519 -N "" -f pi_ed25519
+	ssh-add pi_ed25519
+	cat pi_ed25519.pub | $(SSH) -T "cat > /home/pi/.ssh/authorized_keys"
 
 clean:
 	$(SSH) rm -rf $(TARGET_DIR)
