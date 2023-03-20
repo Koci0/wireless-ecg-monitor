@@ -1,42 +1,52 @@
+DIR_CONFIG = ./lib/Config
+DIR_DRIVER = ./lib/Driver
+DIR_SRC    = ./src
+DIR_BIN    = ./bin
 
-USER := pi
-IP := 192.168.55.110
+OBJ_C = $(wildcard ${DIR_DRIVER}/*.c ${DIR_SRC}/*.c )
+OBJ_O = $(patsubst %.c,${DIR_BIN}/%.o,$(notdir ${OBJ_C}))
+RPI_DEV_C = $(wildcard $(DIR_BIN)/dev_hardware_SPI.o $(DIR_BIN)/RPI_sysfs_gpio.o $(DIR_BIN)/DEV_Config.o )
 
-HOME := /home/$(USER)
-TARGET_DIR := $(HOME)/wireless_ecg
+DEBUG = -D DEBUG
 
-DESTINATION := $(USER)@$(IP)
-SSH := ssh -i pi_ed25519 $(DESTINATION)
-SCP := scp -i pi_ed25519
+USELIB_RPI = USE_BCM2835_LIB
+# USELIB_RPI = USE_WIRINGPI_LIB
+# USELIB_RPI = USE_DEV_LIB
 
-FILES := README.md LICENSE.md Makefile_remote src/* lib/*
-TAR_NAME := wireless_ecg.tar
+ifeq ($(USELIB_RPI), USE_BCM2835_LIB)
+    LIB_RPI = -lbcm2835 -lm 
+else ifeq ($(USELIB_RPI), USE_WIRINGPI_LIB)
+    LIB_RPI = -lwiringPi -lm 
+else ifeq ($(USELIB_RPI), USE_DEV_LIB)
+    LIB_RPI = -lm 
+endif
+DEBUG_RPI = -D $(USELIB_RPI) -D RPI
 
-TARGET := wireless_ecg
+.DEFAULT_GOAL := all
+.PHONY : all clean
 
-all: clean upload build run
+all:RPI_DEV RPI_epd
 
-init:
-	rm pi_ed25519*
-	ssh-keygen -t ed25519 -N "" -f pi_ed25519
-	ssh-add pi_ed25519
-	cat pi_ed25519.pub | $(SSH) -T "cat > /home/pi/.ssh/authorized_keys"
+TARGET = main
+CC = gcc
+MSG = -g -O0 -Wall
+CFLAGS += $(MSG)
 
-clean:
-	$(SSH) rm -rf $(TARGET_DIR)
+RPI_epd:${OBJ_O}
+	echo $(@)
+	$(CC) $(CFLAGS) -D RPI $(OBJ_O) $(RPI_DEV_C) -o $(TARGET) $(LIB_RPI) $(DEBUG)
 
-upload:
-	$(SSH) mkdir -p $(TARGET_DIR)
-	tar -cf $(TAR_NAME) $(FILES)
-	$(SCP) -r $(TAR_NAME) $(DESTINATION):$(TARGET_DIR)
-	rm -f $(TAR_NAME)
-	$(SSH) tar -xvf $(TARGET_DIR)/$(TAR_NAME) -C $(TARGET_DIR)
-	$(SSH) rm -f $(TARGET_DIR)/$(TAR_NAME)
-	$(SSH) mv $(TARGET_DIR)/Makefile_remote $(TARGET_DIR)/Makefile
+${DIR_BIN}/%.o:$(DIR_SRC)/%.c
+	$(CC) $(CFLAGS) -c  $< -o $@ -I $(DIR_CONFIG) -I $(DIR_DRIVER) $(DEBUG)
+    
+${DIR_BIN}/%.o:$(DIR_DRIVER)/%.c
+	$(CC) $(CFLAGS) -c  $< -o $@ -I $(DIR_CONFIG) $(DEBUG)
 
-build:
-	$(SSH) mkdir -p $(TARGET_DIR)/bin
-	$(SSH) "cd $(TARGET_DIR) && make"
+RPI_DEV:
+	$(CC) $(CFLAGS) $(DEBUG_RPI) -c  $(DIR_CONFIG)/DEV_Config.c -o $(DIR_BIN)/DEV_Config.o $(LIB_RPI) $(DEBUG)
+	$(CC) $(CFLAGS) $(DEBUG_RPI) -c  $(DIR_CONFIG)/dev_hardware_SPI.c -o $(DIR_BIN)/dev_hardware_SPI.o $(LIB_RPI) $(DEBUG)
+	$(CC) $(CFLAGS) $(DEBUG_RPI) -c  $(DIR_CONFIG)/RPI_sysfs_gpio.c -o $(DIR_BIN)/RPI_sysfs_gpio.o $(LIB_RPI) $(DEBUG)
 
-run:
-	$(SSH) "sudo $(TARGET_DIR)/$(TARGET)"
+clean :
+	rm $(DIR_BIN)/*.* 
+	rm $(TARGET) 

@@ -46,14 +46,21 @@
 
 HARDWARE_SPI hardware_SPI;
 
-static uint8_t bits = 8; 
+static uint8_t bits = 8;
 
-#define SPI_CS_HIGH     0x04                //Chip select high  
-#define SPI_LSB_FIRST   0x08                //LSB  
+#undef SPI_CS_HIGH
+#undef SPI_LSB_FIRST
+#undef SPI_3WIRE
+#undef SPI_LOOP
+#undef SPI_NO_CS
+#undef SPI_READY
+
+#define SPI_CS_HIGH     0x04                //Chip select high
+#define SPI_LSB_FIRST   0x08                //LSB
 #define SPI_3WIRE       0x10                //3-wire mode SI and SO same line
-#define SPI_LOOP        0x20                //Loopback mode  
-#define SPI_NO_CS       0x40                //A single device occupies one SPI bus, so there is no chip select 
-#define SPI_READY       0x80                //Slave pull low to stop data transmission  
+#define SPI_LOOP        0x20                //Loopback mode
+#define SPI_NO_CS       0x40                //A single device occupies one SPI bus, so there is no chip select
+#define SPI_READY       0x80                //Slave pull low to stop data transmission
 
 struct spi_ioc_transfer tr;
 
@@ -90,7 +97,7 @@ void DEV_HARDWARE_SPI_begin(char *SPI_device)
     }
     tr.bits_per_word = bits;
     
-    DEV_HARDWARE_SPI_Mode(SPIMode(SPI_MODE_0));
+    DEV_HARDWARE_SPI_Mode(SPI_MODE_0);
     DEV_HARDWARE_SPI_ChipSelect(SPI_CS_Mode_LOW);
     DEV_HARDWARE_SPI_SetBitOrder(SPI_BIT_ORDER_MSBFIRST);
     DEV_HARDWARE_SPI_setSpeed(20000000);
