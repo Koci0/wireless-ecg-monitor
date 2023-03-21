@@ -1,8 +1,10 @@
-#include <stdlib.h>
-#include <signal.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <csignal>
+#include <cstdio>
 
+extern "C" {
 #include "ADS1263.h"
+}
 
 // External AVDD and AVSS(Default), or internal 2.5V
 #define REF 5.08
@@ -45,7 +47,7 @@ int main() {
     UBYTE channel_list[channel_number] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     UDOUBLE value[channel_number] = {0};
-    while (1) {
+    while (true) {
         ADS1263_GetAll(channel_list, value, channel_number);
         for (i = 0; i < channel_number; i++) {
             if ((value[i] >> 31) == 1) {
@@ -60,6 +62,4 @@ int main() {
         }
         fflush(stdout);
     }
-
-    return 0;
 }

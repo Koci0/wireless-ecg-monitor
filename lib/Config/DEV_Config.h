@@ -29,6 +29,10 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
@@ -87,4 +91,8 @@ UBYTE DEV_Module_Init(void);
 void DEV_Module_Exit(void);
 
 void DEV_Delay_ms(UDOUBLE xms);
+#endif
+
+#ifdef __cplusplus
+}
 #endif

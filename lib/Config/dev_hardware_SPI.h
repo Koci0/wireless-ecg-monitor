@@ -28,6 +28,10 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef __DEV_HARDWARE_SPI_
 #define __DEV_HARDWARE_SPI_
 
@@ -116,5 +120,8 @@ int DEV_HARDWARE_SPI_ChipSelect(SPIChipSelect CS_Mode);
 int DEV_HARDWARE_SPI_CSEN(SPICSEN EN);
 int DEV_HARDWARE_SPI_Mode(SPIMode mode);
 
+#endif
 
+#ifdef __cplusplus
+}
 #endif

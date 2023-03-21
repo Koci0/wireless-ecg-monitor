@@ -27,6 +27,10 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _ADS1263_H_
 #define _ADS1263_H_
 
@@ -190,4 +194,8 @@ void ADS1263_GetAll(UBYTE *List, UDOUBLE *Value, int Number);
 void ADS1263_GetAll_ADC2(UDOUBLE *ADC_Value);
 UDOUBLE ADS1263_RTD(ADS1263_DELAY delay, ADS1263_GAIN gain, ADS1263_DRATE drate);
 void ADS1263_DAC(ADS1263_DAC_VOLT volt, UBYTE isPositive, UBYTE isClose);
+#endif
+
+#ifdef __cplusplus
+}
 #endif

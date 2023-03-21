@@ -31,7 +31,7 @@ DEBUG_RPI = -D $(USELIB_RPI) -D RPI
 all:RPI_DEV RPI_epd
 
 TARGET = main
-CC = gcc
+CC = g++
 MSG = -g -O0 -Wall
 CFLAGS += $(MSG)
 
@@ -39,9 +39,9 @@ RPI_epd:${OBJ_O}
 	echo $(@)
 	$(CC) $(CFLAGS) -D RPI $(OBJ_O) $(RPI_DEV_C) -o $(TARGET) $(LIB) $(DEBUG)
 
-${DIR_BIN}/%.o:$(DIR_SRC)/%.c
+${DIR_BIN}/%.o:$(DIR_SRC)/%.cpp
 	$(CC) $(CFLAGS) -c  $< -o $@ -I $(DIR_CONFIG) -I $(DIR_DRIVER) $(DEBUG)
-    
+
 ${DIR_BIN}/%.o:$(DIR_DRIVER)/%.c
 	$(CC) $(CFLAGS) -c  $< -o $@ -I $(DIR_CONFIG) $(DEBUG)
 
