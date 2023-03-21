@@ -20,6 +20,9 @@ else ifeq ($(USELIB_RPI), USE_WIRINGPI_LIB)
 else ifeq ($(USELIB_RPI), USE_DEV_LIB)
     LIB_RPI = -lm 
 endif
+
+LIB = $(LIB_RPI)
+
 DEBUG_RPI = -D $(USELIB_RPI) -D RPI
 
 .DEFAULT_GOAL := all
@@ -34,7 +37,7 @@ CFLAGS += $(MSG)
 
 RPI_epd:${OBJ_O}
 	echo $(@)
-	$(CC) $(CFLAGS) -D RPI $(OBJ_O) $(RPI_DEV_C) -o $(TARGET) $(LIB_RPI) $(DEBUG)
+	$(CC) $(CFLAGS) -D RPI $(OBJ_O) $(RPI_DEV_C) -o $(TARGET) $(LIB) $(DEBUG)
 
 ${DIR_BIN}/%.o:$(DIR_SRC)/%.c
 	$(CC) $(CFLAGS) -c  $< -o $@ -I $(DIR_CONFIG) -I $(DIR_DRIVER) $(DEBUG)
